@@ -44,12 +44,14 @@ lengthZ = 8*np.pi
 lengthTh = 2*np.pi
 stretching = 1.05
 
+sin_surface = False
 
 rough_surface = True
-do_interpolation = False    # Needs to set to true, if first postproessesing of that dataset. To save on PP time, this can be set to false, if the interpolation has already been done. If so, the necessary data is read from the pstat_3d.hdf5 file produced in the interpolation process
+do_interpolation = False    # Needs to set to true, if first postproessesing of that dataset. To save on postprocessing time, this can be set to false, if the interpolation has already been done. If so, the necessary data is read from the pstat_3d.hdf5 file produced in the interpolation process
+
+# NOTE: take a look at the masters thesis for an explanation of the idea behind the two switches
 do_transform_into_smooth = True
 build_inverse = True
-sin_surface = False
 
 fname_budget = 'pstat3d_format.hdf5'                                # name of the hdf5 file containing calculated budgets
 fname_averaged = 'averaged_interpolation_fields.hdf5'
@@ -138,8 +140,6 @@ if do_interpolation:
 
 ## use the interpolated data and calculate budgets from it. first define some input data for the functions
 
-
-
 if comm.Get_rank() == 0:
 
     ## extract data from the pstat_file that contains all data
@@ -166,7 +166,7 @@ if comm.Get_rank() == 0:
     from pysemtools.postprocessing.statistics.tensor_manipulations import define_rotation_tensor_from_vectors
     print('NAN in XYZ: ', np.isnan(XYZ).any()) # A dubug print
 
-    N_wall_r =  2
+    N_wall_r =  2 # The datapoints have data, that match the rough pipe. A set of two data points is appended to the array, that cointain wall-fitted data, that is used to calculate the wall friction.
     # Wall data: smooth coords → map to rough for friction calculation
     XYZ_wall = XYZ[:N_wall_r, ...].copy()
     XYZ_wall_rough = XYZ_wall.copy()
@@ -261,7 +261,7 @@ if comm.Get_rank() == 0:
 
     UVW_DA              = avg_from_3D_to_1D(UVW_local, return_counts=False)   # intrinsic average of the local products
 
-    # compute dispersive stress
+    # compute dispersive stress. Look at thesis for explanation
     Dij = np.empty_like(UVW_DA)
     Dij[...,0] = UVW_DA[...,0] - UVW[...,0]*UVW[...,0]   # uu
     Dij[...,1] = UVW_DA[...,1] - UVW[...,1]*UVW[...,1]   # vv
